@@ -1,44 +1,57 @@
-import { coursers } from "../data/inmemoryDB.js";
+import { Course } from "../models/courses.model.js";
 import { validationResult } from "express-validator";
-export const getAllCourses = (req, res) => {
-  res.status(200).json(coursers);
+export const getAllCourses = async (req, res) => {
+  const courses = await Course.find();
+  res.status(200).json(courses);
 };
 
-export const getCourseById = (req, res) => {
-  const id = req.params.courseId;
-  const course = coursers.find((c) => c.id === +id);
-  if (!course) {
-    return res.status(404).json({ message: "Course not found" });
+export const getCourseById = async (req, res) => {
+  try {
+    const id = req.params.courseId;
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    res.status(200).json(course);
+  } catch (error) {
+    res.status(400).json({ message: "Invalid object ID" });
   }
-  res.status(200).json(course);
 };
 
-export const addCourse = (req, res) => {
+export const addCourse = async (req, res) => {
   const errors = validationResult(req);
   console.log(errors);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  const course = { id: coursers.length + 1, ...req.body };
-  coursers.push(course);
+  const course = new Course(req.body);
+  await course.save();
   res.status(201).json(course);
 };
 
-export const updateCourse = (req, res) => {
-  const id = +req.params.courseId;
-  let course = coursers.find((c) => c.id === id);
-  if (!course) {
-    return res.status(404).json({ message: "Course not found" });
+export const updateCourse = async (req, res) => {
+  try {
+    const updatedCourse = await Course.updateOne(
+      { _id: req.params.courseId },
+      { $set: { ...req.body } }
+    );
+    if (updatedCourse.matchedCount === 0) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    return res.status(200).json(updatedCourse);
+  } catch (error) {
+    return res.status(400).json({ message: error });
   }
-  course = { ...course, ...req.body };
-  res.status(200).json(course);
 };
 
-export const deleteCourse = (req, res) => {
-  const id = +req.params.courseId;
-  const index = coursers.findIndex((c) => c.id === id);
-  if (index !== -1) {
-    coursers.splice(index, 1);
+export const deleteCourse = async (req, res) => {
+  try {
+    const deletedCourse = await Course.deleteOne({ _id: req.params.courseId });
+    if (deletedCourse.deletedCount === 0) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    return res.status(200).json({ message: "Course deleted successfully" });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
   }
-  res.status(200).send({ success: true });
 };
