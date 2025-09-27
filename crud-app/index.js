@@ -1,5 +1,6 @@
 import express from "express";
 import coursesRoute from "./routes/courses.route.js";
+import usersRoute from "./routes/users.route.js";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import * as httpStatusText from "./utils/httpStatusText.js";
@@ -16,6 +17,7 @@ mongoose.connect(process.env.MONGODB_URI).then(() => {
 app.use(express.json());
 app.use(cors());
 app.use("/api/courses", coursesRoute);
+app.use("/api/users", usersRoute);
 
 // Global middleware for not found routes
 app.use((req, res, next) => {
