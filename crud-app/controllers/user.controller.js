@@ -3,7 +3,6 @@ import { asyncWrapper } from "../middlewares/asyncWrappper.js";
 import * as httpStatusText from "../utils/httpStatusText.js";
 import AppError from "../utils/appError.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { generateJWT } from "../utils/generateJWT.js";
 
 const getAllUsers = asyncWrapper(async (req, res, next) => {
@@ -22,7 +21,7 @@ const getAllUsers = asyncWrapper(async (req, res, next) => {
 });
 
 const registerUser = asyncWrapper(async (req, res, next) => {
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password, role } = req.body;
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     const error = new AppError(
@@ -38,9 +37,14 @@ const registerUser = asyncWrapper(async (req, res, next) => {
     lastName,
     email,
     password: hashedPassword,
+    role,
   });
 
-  const token = await generateJWT({ email: newUser.email, id: newUser._id });
+  const token = await generateJWT({
+    email: newUser.email,
+    id: newUser._id,
+    role: newUser.role,
+  });
   newUser.token = token;
   await newUser.save();
   res
@@ -71,7 +75,11 @@ const loginUser = asyncWrapper(async (req, res, next) => {
     );
     return next(error);
   }
-  const token = await generateJWT({ email: user.email, id: user._id });
+  const token = await generateJWT({
+    email: user.email,
+    id: user._id,
+    role: user.role,
+  });
   res.status(200).json({ status: httpStatusText.SUCCESS, data: { token } });
 });
 
